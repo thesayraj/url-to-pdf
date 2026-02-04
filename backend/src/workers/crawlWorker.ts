@@ -45,6 +45,15 @@ new Worker(
 
       await browser.close();
 
+      if (discovered.length === 0) {
+        await updateCrawlState(crawlJobId, (state) => {
+          state.status = "failed";
+          state.error = "Couldn't get Pages!";
+          return state;
+        });
+        return;
+      }
+
       await updateCrawlState(crawlJobId, (state) => {
         state.status = "processing";
         state.pages = discovered.map((u, i) => ({

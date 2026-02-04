@@ -68,6 +68,7 @@ export const pdfWorker = new Worker(
         downloadLink,
       });
     } catch (err: any) {
+      console.log("pdfWorker | Error:", err);
       if (browser) {
         try {
           await browser.close();

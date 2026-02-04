@@ -1,0 +1,47 @@
+services:
+  api:
+    build: .
+    command: npm run start:server
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./storage:/src/storage
+
+  crawl-worker:
+    build: .
+    command: npm run start:crawl-worker
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./storage:/src/storage
+
+  pdf-worker:
+    build: .
+    command: npm run start:pdf-worker
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./storage:/src/storage
+
+  merge-worker:
+    build: .
+    command: npm run start:merge-worker
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./storage:/src/storage
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"

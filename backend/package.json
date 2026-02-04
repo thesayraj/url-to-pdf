@@ -7,9 +7,11 @@
     "dev:server": "ts-node-dev --clear --exit-child --notify false src/server.ts",
     "dev:crawl-worker": "ts-node-dev --clear --exit-child --notify false src/workers/crawlWorker.ts",
     "dev:pdf-worker": "ts-node-dev --clear --exit-child --notify false src/workers/pdfWorker.ts",
+    "dev:merge-worker": "ts-node-dev --clear --exit-child --notify false src/workers/mergeWorker.ts",
     "start:server": "node dist/server.js",
     "start:crawl-worker": "node dist/workers/crawlWorker.js",
     "start:pdf-worker": "node dist/workers/pdfWorker.js",
+    "start:merge-worker": "node dist/workers/mergeWorker.js",
     "build": "tsc"
   },
   "keywords": [],
@@ -22,6 +24,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "ioredis": "^5.9.2",
+    "pdf-lib": "^1.17.1",
     "playwright": "^1.58.1",
     "psl": "^1.15.0",
     "uuid": "^13.0.0"

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { v4 as uuid } from "uuid";
 import { crawlQueue } from "../queues/crawlQueue";
 import { initCrawlState, getCrawlState } from "../state/crawlState";
+import { normalizeAndValidateUrl } from "../utils/url";
 
 const router = Router();
 
@@ -9,17 +10,31 @@ const router = Router();
  * Start crawl
  */
 router.post("/crawl", async (req, res) => {
-  const { url } = req.body;
+  let { url } = req.body;
+
+  try {
+    url = normalizeAndValidateUrl(url);
+  } catch (err) {
+    return res.status(400).json({
+      error: "Invalid URL provided",
+      details: err instanceof Error ? err.message : "Unknown error",
+    });
+  }
+
   const crawlJobId = uuid();
 
-  await initCrawlState(crawlJobId, url);
+  try {
+    await initCrawlState(crawlJobId, url);
 
-  await crawlQueue.add("crawl-site", {
-    crawlJobId,
-    url,
-  });
+    await crawlQueue.add("crawl-site", {
+      crawlJobId,
+      url,
+    });
 
-  res.json({ crawlJobId });
+    res.json({ crawlJobId });
+  } catch (queueErr) {
+    res.status(500).json({ error: "Failed to initialize crawl job" });
+  }
 });
 
 /**

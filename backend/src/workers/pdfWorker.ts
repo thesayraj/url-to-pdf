@@ -3,9 +3,10 @@ import { chromium } from "playwright";
 import path from "path";
 import fs from "fs/promises";
 
+import { env } from "../config/env";
 import { redis } from "../redis";
-import { updateCrawlState } from "../state/crawlState";
-import { pageIdFromUrl } from "../utils/pageId";
+import { getCrawlState, updateCrawlState } from "../state/crawlState";
+import { finalizePage } from "../state/crawlProgress";
 
 const BASE_DIR = path.resolve("storage/jobs");
 
@@ -17,9 +18,13 @@ export const pdfWorker = new Worker(
       pageUrl: string;
     };
 
-    const pageId = pageIdFromUrl(pageUrl);
+    const state = await getCrawlState(crawlJobId);
+    const pageData = state.pages.find((p: any) => p.url === pageUrl);
+    const pageId = pageData.pageId;
+
     const pagesDir = path.join(BASE_DIR, crawlJobId, "pages");
-    const pdfPath = path.join(pagesDir, `${pageId}.pdf`);
+    const pdfPath = `${pagesDir}/${pageId}.pdf`;
+    const downloadLink = `${env.BACKEND_HOST}/api/pdf/${crawlJobId}/${pageId}.pdf`;
 
     let browser;
 
@@ -45,7 +50,10 @@ export const pdfWorker = new Worker(
         timeout: 30_000,
       });
 
-      // Generate PDF
+      const hasVideo = Boolean(
+        await page.$("video, iframe[src*='youtube'], iframe[src*='vimeo']"),
+      );
+
       await page.pdf({
         path: pdfPath,
         format: "A4",
@@ -54,13 +62,10 @@ export const pdfWorker = new Worker(
 
       await browser.close();
 
-      await updateCrawlState(crawlJobId, (state) => {
-        const page = state.pages.find((p: any) => p.url === pageUrl);
-        if (page) {
-          page.status = "done";
-          page.pdfPath = pdfPath;
-        }
-        return state;
+      await finalizePage(crawlJobId, pageUrl, {
+        status: "done",
+        hasVideo,
+        downloadLink,
       });
     } catch (err: any) {
       if (browser) {
@@ -69,16 +74,12 @@ export const pdfWorker = new Worker(
         } catch {}
       }
 
-      await updateCrawlState(crawlJobId, (state) => {
-        const page = state.pages.find((p: any) => p.url === pageUrl);
-        if (page) {
-          page.status = "failed";
-          page.error = err.message || "PDF generation failed";
-        }
-        return state;
+      await finalizePage(crawlJobId, pageUrl, {
+        status: "failed",
+        error: err.message || "PDF generation failed",
       });
 
-      throw err; // important for BullMQ retries
+      throw err;
     }
   },
   {

@@ -24,6 +24,7 @@ yarn-error.log*
 
 # other
 package-lock.json
+storage
 
 # Coverage directory
 coverage

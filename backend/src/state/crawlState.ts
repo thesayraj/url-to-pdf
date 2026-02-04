@@ -1,18 +1,17 @@
 import { redis } from "../redis";
+import { CrawlState } from "../types/common";
 
 const key = (crawlJobId: string) => `app:crawl:${crawlJobId}`;
 
 export async function initCrawlState(crawlJobId: string, url: string) {
-  await redis.set(
-    key(crawlJobId),
-    JSON.stringify({
-      crawlJobId,
-      url,
-      status: "queued",
-      pages: [],
-      createdAt: Date.now(),
-    })
-  );
+  const state: CrawlState = {
+    crawlJobId,
+    url,
+    status: "queued",
+    pages: [],
+    createdAt: Date.now(),
+  };
+  await redis.set(key(crawlJobId), JSON.stringify(state));
 }
 
 export async function getCrawlState(crawlJobId: string) {
@@ -22,7 +21,7 @@ export async function getCrawlState(crawlJobId: string) {
 
 export async function updateCrawlState(
   crawlJobId: string,
-  updater: (state: any) => any
+  updater: (state: CrawlState) => CrawlState,
 ) {
   const state = await getCrawlState(crawlJobId);
   if (!state) return;
